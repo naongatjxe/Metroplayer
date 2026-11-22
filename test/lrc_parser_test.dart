@@ -40,4 +40,19 @@ void main() {
     expect(LrcParser.parse(source).single.text, 'Thirty years');
     expect(LrcParser.plainText(source), 'Thirty years');
   });
+
+  test('removes duplicate entries at the same time but keeps repeated lyrics',
+      () {
+    final lines = LrcParser.parse(
+      '[00:01.00]same line\n'
+      '[00:01.00] same   line \n'
+      '[00:02.00]same line',
+    );
+
+    expect(
+      lines.map((line) => line.time),
+      [const Duration(seconds: 1), const Duration(seconds: 2)],
+    );
+    expect(lines.map((line) => line.text), ['same line', 'same line']);
+  });
 }

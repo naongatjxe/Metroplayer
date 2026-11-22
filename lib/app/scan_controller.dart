@@ -4,6 +4,7 @@ import 'dart:isolate';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
 import 'package:permission_handler/permission_handler.dart';
 
 import '../data/app_db.dart';
@@ -52,22 +53,28 @@ class ScanController extends StateNotifier<ScanState> {
   ScanController(this._ref) : super(const ScanState());
 
   final Ref _ref;
+  bool _scanInProgress = false;
 
-  Future<bool> _ensurePermission() async {
+  Future<bool> _ensurePermission({required bool request}) async {
     if (!Platform.isAndroid) return true;
     try {
       var s = await Permission.audio.status;
       if (s.isGranted) return true;
-      s = await Permission.audio.request();
-      if (s.isGranted) return true;
+      if (request) {
+        s = await Permission.audio.request();
+        if (s.isGranted) return true;
+      }
     } catch (_) {
       // Older Android versions do not know READ_MEDIA_AUDIO.
     }
     try {
       var s = await Permission.storage.status;
       if (s.isGranted) return true;
-      s = await Permission.storage.request();
-      return s.isGranted;
+      if (request) {
+        s = await Permission.storage.request();
+        return s.isGranted;
+      }
+      return false;
     } catch (_) {
       return false;
     }
@@ -110,6 +117,35 @@ class ScanController extends StateNotifier<ScanState> {
     }
   }
 
+  Future<void> addExcludedFolder() async {
+    if (_scanInProgress) return;
+    state = state.copyWith(clearMessage: true);
+    try {
+      final path = await FilePicker.platform
+          .getDirectoryPath(dialogTitle: 'choose a folder to exclude');
+      if (path == null) return;
+      final folder = p.normalize(path);
+      final current = _ref.read(settingsProvider).excludedFolders;
+      if (current.any((existing) => p.equals(existing, folder))) return;
+      _ref
+          .read(settingsProvider.notifier)
+          .setExcludedFolders([...current, folder]);
+      await scan();
+    } catch (error, stackTrace) {
+      AppLog.logError('scan exclusion', error, stackTrace);
+      state = state.copyWith(message: 'that folder could not be excluded');
+    }
+  }
+
+  Future<void> removeExcludedFolder(String path) async {
+    if (_scanInProgress) return;
+    final current = _ref.read(settingsProvider).excludedFolders;
+    _ref.read(settingsProvider.notifier).setExcludedFolders(
+          current.where((folder) => !p.equals(folder, path)).toList(),
+        );
+    await scan();
+  }
+
   Future<void> removeSource(String path) async {
     final db = _ref.read(dbProvider);
     await db.removeSource(path);
@@ -118,22 +154,37 @@ class ScanController extends StateNotifier<ScanState> {
     state = state.copyWith(clearMessage: true);
   }
 
-  Future<void> scan() async {
-    if (state.scanning) return;
+  Future<void> scan({bool automatic = false}) async {
+    if (_scanInProgress) return;
+    _scanInProgress = true;
+    state = state.copyWith(scanning: true, clearMessage: true);
+    try {
+      await _runScan(automatic: automatic);
+    } finally {
+      _scanInProgress = false;
+      if (state.scanning) state = state.copyWith(scanning: false);
+    }
+  }
+
+  Future<void> _runScan({required bool automatic}) async {
     final db = _ref.read(dbProvider);
-    state = state.copyWith(clearMessage: true);
 
     final roots = await _roots(db);
     if (roots.isEmpty) {
-      state = state.copyWith(message: 'add a music folder first');
+      state =
+          state.copyWith(scanning: false, message: 'add a music folder first');
       return;
     }
-    if (!await _ensurePermission()) {
+    if (!await _ensurePermission(request: !automatic)) {
+      if (automatic) return;
       state = state.copyWith(
+          scanning: false,
           message: 'storage permission is needed to read your music');
       return;
     }
 
+    final excludedFolders =
+        List<String>.of(_ref.read(settingsProvider).excludedFolders);
     final known = await db.knownTracks();
     final ids = <String, int>{for (final e in known.entries) e.key: e.value.$1};
     final artDir = _ref.read(artDirProvider);
@@ -201,7 +252,8 @@ class ScanController extends StateNotifier<ScanState> {
       isolate = await Isolate.spawn<ScanRequest>(
         scanWorker,
         ScanRequest(rp.sendPort, roots,
-            {for (final e in known.entries) e.key: e.value.$2}, artDir),
+            {for (final e in known.entries) e.key: e.value.$2}, artDir,
+            excludedFolders: excludedFolders),
         onError: rp.sendPort,
         onExit: rp.sendPort,
       );

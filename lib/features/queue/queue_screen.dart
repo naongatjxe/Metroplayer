@@ -41,6 +41,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
   Widget build(BuildContext context) {
     final queue = ref.watch(queueProvider);
     final current = ref.watch(currentIndexProvider).valueOrNull;
+    final mediaItem = ref.watch(mediaItemProvider).valueOrNull;
     final playback = ref.watch(playbackStateProvider).valueOrNull;
     final shuffled = playback?.shuffleMode != AudioServiceShuffleMode.none;
 
@@ -60,13 +61,23 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
         onRetry: () => ref.invalidate(queueProvider),
         builder: (items) {
           if (!_same(items, _items)) _items = List.of(items);
-          if (_items.isEmpty) {
-            return const EmptyState(message: 'the queue is empty');
-          }
-          final startIndex = (current ?? -1) + 1;
+          final currentQueueIndex =
+              current != null && current >= 0 && current < _items.length
+                  ? current
+                  : mediaItem == null
+                      ? null
+                      : _items.indexWhere((item) => item.id == mediaItem.id);
+          final resolvedCurrentIndex =
+              currentQueueIndex != null && currentQueueIndex >= 0
+                  ? currentQueueIndex
+                  : null;
+          final currentItem = resolvedCurrentIndex == null
+              ? mediaItem
+              : _items[resolvedCurrentIndex];
+          final startIndex = (resolvedCurrentIndex ?? -1) + 1;
           final upcoming = _items.skip(startIndex).toList();
-          if (upcoming.isEmpty) {
-            return const EmptyState(message: 'no upcoming tracks');
+          if (currentItem == null && _items.isEmpty) {
+            return const EmptyState(message: 'the queue is empty');
           }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -74,101 +85,152 @@ class _QueueScreenState extends ConsumerState<QueueScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(Mt.pad, 0, Mt.pad, 8),
                 child: Text(
-                    '${upcoming.length} tracks  ·  ${shuffled ? 'shuffled play order' : 'drag to reorder'}',
+                    '${resolvedCurrentIndex ?? 0} played  ·  ${upcoming.length} upcoming  ·  ${shuffled ? 'shuffled play order' : 'drag to reorder'}',
                     style: Mt.small),
               ),
               Expanded(
-                child: ReorderableListView.builder(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  buildDefaultDragHandles: false,
-                  itemCount: upcoming.length,
-                  onReorderItem: (oldIndex, newIndex) {
-                    if (shuffled) return;
-                    setState(() {
-                      final from = startIndex + oldIndex;
-                      final to = startIndex + newIndex;
-                      final item = _items.removeAt(from);
-                      _items.insert(to, item);
-                    });
-                    ref.read(audioHandlerProvider).moveQueueItem(
-                        startIndex + oldIndex, startIndex + newIndex);
-                  },
-                  itemBuilder: (context, i) {
-                    final queueIndex = startIndex + i;
-                    final item = upcoming[i];
-                    final artKey = item.extras?['art'] as String?;
-                    return SizedBox(
-                      key: ValueKey('${item.id}-$queueIndex'),
-                      height: 72,
-                      child: Pressable(
-                        label: '${item.title}, ${item.artist ?? ''}',
-                        tilt: false,
-                        onTap: () => ref
-                            .read(audioHandlerProvider)
-                            .skipToQueueItem(queueIndex),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          child: Row(
-                            children: [
-                              Artwork(artKey: artKey, size: 52),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      item.title,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Mt.rowTitle,
-                                    ),
-                                    Text(
-                                      item.artist ?? '',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: Mt.rowSub,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Pressable(
-                                label: 'remove from queue',
-                                tilt: false,
-                                onTap: () {
-                                  setState(() => _items = List.of(_items)
-                                    ..removeAt(queueIndex));
-                                  ref
-                                      .read(audioHandlerProvider)
-                                      .removeQueueItemAt(queueIndex);
-                                },
-                                child: const Padding(
-                                  padding: EdgeInsets.all(8),
-                                  child: MetroIcon(AppIcons.close,
-                                      size: 18, color: Mt.dim),
-                                ),
-                              ),
-                              if (!shuffled)
-                                ReorderableDragStartListener(
-                                  index: i,
-                                  child: const Padding(
-                                    padding: EdgeInsets.all(8),
-                                    child: MetroIcon(AppIcons.dragHandle,
-                                        size: 20, color: Mt.dim),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
+                child: _items.isEmpty
+                    ? currentItem == null
+                        ? const EmptyState(message: 'no upcoming tracks')
+                        : _QueueTrackRow(
+                            key: ValueKey('${currentItem.id}-current'),
+                            item: currentItem,
+                            isCurrent: true,
+                            onTap: () => context.push('/now-playing'),
+                          )
+                    : ReorderableListView.builder(
+                        padding: const EdgeInsets.only(bottom: 24),
+                        buildDefaultDragHandles: false,
+                        itemCount: _items.length,
+                        onReorderItem: (oldIndex, newIndex) {
+                          if (shuffled ||
+                              oldIndex < startIndex ||
+                              newIndex < startIndex) {
+                            return;
+                          }
+                          setState(() {
+                            final item = _items.removeAt(oldIndex);
+                            _items.insert(newIndex, item);
+                          });
+                          ref
+                              .read(audioHandlerProvider)
+                              .moveQueueItem(oldIndex, newIndex);
+                        },
+                        itemBuilder: (context, i) {
+                          final item = _items[i];
+                          final isCurrent = resolvedCurrentIndex == i;
+                          final isUpcoming = i >= startIndex;
+                          return _QueueTrackRow(
+                            key: ValueKey('${item.id}-$i'),
+                            item: item,
+                            isCurrent: isCurrent,
+                            onTap: isCurrent
+                                ? () => context.push('/now-playing')
+                                : () => ref
+                                    .read(audioHandlerProvider)
+                                    .skipToQueueItem(i),
+                            onRemove: isUpcoming
+                                ? () {
+                                    setState(() =>
+                                        _items = List.of(_items)..removeAt(i));
+                                    ref
+                                        .read(audioHandlerProvider)
+                                        .removeQueueItemAt(i);
+                                  }
+                                : null,
+                            dragIndex: isUpcoming && !shuffled ? i : null,
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _QueueTrackRow extends StatelessWidget {
+  const _QueueTrackRow({
+    super.key,
+    required this.item,
+    required this.isCurrent,
+    required this.onTap,
+    this.onRemove,
+    this.dragIndex,
+  });
+
+  final MediaItem item;
+  final bool isCurrent;
+  final VoidCallback onTap;
+  final VoidCallback? onRemove;
+  final int? dragIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    final trackId = (item.extras?['tid'] as num?)?.toInt();
+    final index = dragIndex;
+    return SizedBox(
+      height: 72,
+      child: Pressable(
+        label: '${item.title}, ${item.artist ?? ''}',
+        tilt: false,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Artwork(
+                artKey: item.extras?['art'] as String?,
+                size: 52,
+                trackId: trackId,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Mt.rowTitle.copyWith(
+                        color: isCurrent ? context.accent : Mt.text,
+                      ),
+                    ),
+                    Text(
+                      item.artist ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Mt.rowSub,
+                    ),
+                  ],
+                ),
+              ),
+              if (onRemove != null)
+                Pressable(
+                  label: 'remove from queue',
+                  tilt: false,
+                  onTap: onRemove,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: MetroIcon(AppIcons.close, size: 18, color: Mt.dim),
+                  ),
+                ),
+              if (index != null)
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8),
+                    child:
+                        MetroIcon(AppIcons.dragHandle, size: 20, color: Mt.dim),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

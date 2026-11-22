@@ -98,15 +98,13 @@ class TrackMetaList extends StatelessWidget {
   }
 }
 
-/// Condensed one-line metadata summary: `flac · 1 411 kbps · 44.1 kHz · 2024`.
+/// Condensed technical metadata summary: `1 411 kbps · 44.1 kHz · 16-bit`.
 String metaSummary(Track? t) {
   if (t == null) return '';
   final parts = <String>[
-    if (t.codec.isNotEmpty) t.codec.toUpperCase(),
     if (t.bitrate > 0) '${bitrateKbps(t.bitrate)} kbps',
     if (t.sampleRate > 0) '${(t.sampleRate / 1000).toStringAsFixed(1)} kHz',
     if (t.bitDepth > 0) '${t.bitDepth}-bit',
-    if (t.year > 0) '${t.year}',
   ];
   return parts.join('  ·  ');
 }

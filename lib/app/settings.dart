@@ -9,12 +9,11 @@ class AppSettings {
     this.accent = 'blue',
     this.artistCategory = 'artist',
     this.motionMode = 0,
-    this.songSort = 'title',
-    this.albumSort = 'title',
     this.keepPlaying = true,
     this.showRecent = true,
     this.showFavourites = true,
     this.showMostPlayed = true,
+    this.excludedFolders = const [],
   });
 
   /// Name of one of [AccentColor.all].
@@ -26,12 +25,11 @@ class AppSettings {
   /// 0 = follow system, 1 = reduce, 2 = full.
   final int motionMode;
 
-  final String songSort;
-  final String albumSort;
   final bool keepPlaying;
   final bool showRecent;
   final bool showFavourites;
   final bool showMostPlayed;
+  final List<String> excludedFolders;
 
   AccentColor get accentColor => AccentColor.all
       .firstWhere((a) => a.name == accent, orElse: () => AccentColor.all.first);
@@ -40,23 +38,21 @@ class AppSettings {
     String? accent,
     String? artistCategory,
     int? motionMode,
-    String? songSort,
-    String? albumSort,
     bool? keepPlaying,
     bool? showRecent,
     bool? showFavourites,
     bool? showMostPlayed,
+    List<String>? excludedFolders,
   }) {
     return AppSettings(
       accent: accent ?? this.accent,
       artistCategory: artistCategory ?? this.artistCategory,
       motionMode: motionMode ?? this.motionMode,
-      songSort: songSort ?? this.songSort,
-      albumSort: albumSort ?? this.albumSort,
       keepPlaying: keepPlaying ?? this.keepPlaying,
       showRecent: showRecent ?? this.showRecent,
       showFavourites: showFavourites ?? this.showFavourites,
       showMostPlayed: showMostPlayed ?? this.showMostPlayed,
+      excludedFolders: excludedFolders ?? this.excludedFolders,
     );
   }
 }
@@ -70,12 +66,11 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
         accent: p.getString('accent') ?? 'blue',
         artistCategory: p.getString('artistCategory') ?? 'artist',
         motionMode: p.getInt('motionMode') ?? 0,
-        songSort: p.getString('songSort') ?? 'title',
-        albumSort: p.getString('albumSort') ?? 'title',
         keepPlaying: p.getBool('keepPlaying') ?? true,
         showRecent: p.getBool('showRecent') ?? true,
         showFavourites: p.getBool('showFavourites') ?? true,
         showMostPlayed: p.getBool('showMostPlayed') ?? true,
+        excludedFolders: p.getStringList('excludedFolders') ?? const [],
       );
 
   void setAccent(String value) {
@@ -91,16 +86,6 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   void setMotionMode(int value) {
     state = state.copyWith(motionMode: value);
     _prefs.setInt('motionMode', value);
-  }
-
-  void setSongSort(String value) {
-    state = state.copyWith(songSort: value);
-    _prefs.setString('songSort', value);
-  }
-
-  void setAlbumSort(String value) {
-    state = state.copyWith(albumSort: value);
-    _prefs.setString('albumSort', value);
   }
 
   void setKeepPlaying(bool value) {
@@ -121,5 +106,11 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   void setShowMostPlayed(bool value) {
     state = state.copyWith(showMostPlayed: value);
     _prefs.setBool('showMostPlayed', value);
+  }
+
+  void setExcludedFolders(List<String> value) {
+    final folders = List<String>.unmodifiable(value);
+    state = state.copyWith(excludedFolders: folders);
+    _prefs.setStringList('excludedFolders', folders);
   }
 }

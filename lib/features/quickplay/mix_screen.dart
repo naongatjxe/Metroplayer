@@ -148,33 +148,47 @@ class _MixContentState extends ConsumerState<_MixContent> {
           const SizedBox(height: 24),
           Text('up next', style: Mt.label.copyWith(color: context.accent)),
           const SizedBox(height: 8),
-          for (final track in _mix.take(8))
+          for (var index = 0; index < _mix.length; index++)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 5),
-              child: Row(
-                children: [
-                  Artwork(artKey: track.artKey, size: 44),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          track.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Mt.rowTitle,
-                        ),
-                        Text(
-                          '${track.artist} · ${track.album}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Mt.rowSub,
-                        ),
-                      ],
+              child: Pressable(
+                label: 'play ${_mix[index].title}',
+                tilt: false,
+                onTap: () => playTracks(
+                  ref,
+                  _mix,
+                  index,
+                  shuffle: false,
+                ),
+                child: Row(
+                  children: [
+                    Artwork(
+                      artKey: _mix[index].artKey,
+                      size: 44,
+                      trackId: _mix[index].id,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _mix[index].title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Mt.rowTitle,
+                          ),
+                          Text(
+                            '${_mix[index].artist} · ${_mix[index].album}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Mt.rowSub,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
         ],

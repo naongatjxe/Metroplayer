@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/theme/tokens.dart';
+import '../../core/widgets/alpha_grouped_list.dart';
 import '../../core/widgets/controls.dart';
 import '../../core/widgets/metro_page.dart';
 import '../../domain/models.dart';
@@ -23,23 +24,17 @@ class RecentScreen extends ConsumerWidget {
         onRetry: () => ref.invalidate(recentTracksProvider),
         builder: (tracks) {
           if (tracks.isEmpty) return const EmptyState(message: 'no music yet');
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(Mt.pad, 0, Mt.pad, 6),
-                child: Text('${tracks.length} tracks, newest first',
-                    style: Mt.small),
-              ),
-              Expanded(
-                child: ListView.builder(
-                  itemExtent: trackTileHeight,
-                  itemCount: tracks.length,
-                  itemBuilder: (context, i) =>
-                      TrackTile(tracks[i], queue: tracks, index: i),
-                ),
-              ),
-            ],
+          return AlphaGroupedListView<Track>(
+            items: tracks,
+            labelOf: (track) => track.title,
+            itemName: 'song',
+            itemCountLabel: 'recently added tracks',
+            itemExtent: trackTileHeight,
+            itemBuilder: (context, track, index, orderedTracks) => TrackTile(
+              track,
+              queue: orderedTracks,
+              index: index,
+            ),
           );
         },
       ),

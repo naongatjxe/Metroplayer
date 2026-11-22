@@ -1,3 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +15,9 @@ import '../../core/utils.dart';
 import '../../core/widgets/controls.dart';
 import '../../core/widgets/metro_page.dart';
 import '../../core/widgets/pressable.dart';
+import '../../data/app_log.dart';
 import '../shared/async_view.dart';
+import '../shared/excluded_folders.dart';
 import '../shared/sheets.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -66,6 +73,13 @@ class SettingsScreen extends ConsumerWidget {
 
                   // ------------------------------------------------------- sources
                   const SectionLabel('music folders'),
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(Mt.pad, 0, Mt.pad, 8),
+                    child: Text(
+                      'The library scans automatically when the app opens or resumes.',
+                      style: Mt.small,
+                    ),
+                  ),
                   AsyncView<List<SourceInfo>>(
                     value: ref.watch(sourcesProvider),
                     onRetry: () => ref.invalidate(sourcesProvider),
@@ -92,6 +106,11 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                       ],
                     ),
+                  ),
+                  const SectionLabel('scan exclusions'),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: Mt.pad),
+                    child: ExcludedFoldersSection(showHeading: false),
                   ),
                   if (scan.scanning) ...[
                     Padding(
@@ -121,7 +140,7 @@ class SettingsScreen extends ConsumerWidget {
                   _ActionRow(
                     icon: AppIcons.folder,
                     label: 'add a music folder',
-                    onTap: controller.addFolder,
+                    onTap: scan.scanning ? null : controller.addFolder,
                   ),
                   if (scan.message != null)
                     Padding(
@@ -132,38 +151,6 @@ class SettingsScreen extends ConsumerWidget {
 
                   // ------------------------------------------------------- library
                   const SectionLabel('library'),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Mt.pad),
-                    child: Column(
-                      children: [
-                        MetroDropdown<String>(
-                          label: 'song sort',
-                          value: settings.songSort,
-                          options: const {
-                            'title': 'title a–z',
-                            'title_desc': 'title z–a',
-                            'artist': 'artist',
-                            'added': 'newest first',
-                          },
-                          onChanged: notifier.setSongSort,
-                        ),
-                        const SizedBox(height: 10),
-                        MetroDropdown<String>(
-                          label: 'album sort',
-                          value: settings.albumSort,
-                          options: const {
-                            'title': 'title a–z',
-                            'title_desc': 'title z–a',
-                            'artist': 'artist',
-                            'year': 'year',
-                            'added': 'recently added',
-                          },
-                          onChanged: notifier.setAlbumSort,
-                        ),
-                      ],
-                    ),
-                  ),
-
                   // ------------------------------------------------------ playback
                   const SectionLabel('playback'),
                   _ActionRow(
@@ -185,7 +172,7 @@ class SettingsScreen extends ConsumerWidget {
                   const SectionLabel('about'),
                   _ActionRow(
                     icon: AppIcons.check,
-                    label: 'about Metroplayer',
+                    label: 'about Metro Player',
                     onTap: () => context.push('/about'),
                   ),
                   _ActionRow(
@@ -363,6 +350,16 @@ class SettingsScreen extends ConsumerWidget {
                       child: Text('diagnostics',
                           style: Mt.itemTitle.copyWith(fontSize: 26))),
                   Pressable(
+                    label: 'export diagnostics as text',
+                    tilt: false,
+                    onTap: () => _exportDiagnostics(context, ref),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('export',
+                          style: Mt.rowTitle.copyWith(color: c.accent)),
+                    ),
+                  ),
+                  Pressable(
                     label: 'clear diagnostics',
                     tilt: false,
                     onTap: () async {
@@ -407,6 +404,45 @@ class SettingsScreen extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _exportDiagnostics(BuildContext context, WidgetRef ref) async {
+    try {
+      final events = await ref.read(dbProvider).events();
+      final report = StringBuffer()
+        ..writeln('Metro Player diagnostic log')
+        ..writeln('Generated: ${DateTime.now().toIso8601String()}')
+        ..writeln('Events: ${events.length}')
+        ..writeln();
+      for (final event in events.reversed) {
+        final time =
+            DateTime.fromMillisecondsSinceEpoch(event.timeMs).toLocal();
+        report
+          ..writeln('[${time.toIso8601String()}] ${event.kind}')
+          ..writeln(event.message)
+          ..writeln();
+      }
+
+      final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'export diagnostics',
+        fileName: 'metroplayer-diagnostics.txt',
+        type: FileType.custom,
+        allowedExtensions: const ['txt'],
+        bytes: Uint8List.fromList(utf8.encode(report.toString())),
+      );
+      if (!context.mounted || (path == null && !kIsWeb)) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('diagnostics exported as TXT')),
+      );
+    } catch (error, stackTrace) {
+      AppLog.logError('diagnostics export', error, stackTrace);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('could not export diagnostics: ${error.runtimeType}'),
+        ),
+      );
+    }
   }
 }
 
@@ -654,4 +690,3 @@ class _ActionRow extends StatelessWidget {
     );
   }
 }
-

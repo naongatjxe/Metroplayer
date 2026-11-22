@@ -31,6 +31,7 @@ class AppAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   int? _lastIndex;
   bool _counted = false;
   bool _historyMarked = false;
+  Future<void> _nextSkipQueue = Future<void>.value();
   final StreamController<int> _recentHistory =
       StreamController<int>.broadcast();
   int _recentHistoryVersion = 0;
@@ -174,7 +175,7 @@ class AppAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   void _onPlayerError(Object e, StackTrace st) {
     AppLog.log('playback', 'player error: ${e.runtimeType}');
     if (_player.hasNext) {
-      _player.seekToNext();
+      unawaited(skipToNext());
     }
   }
 
@@ -333,7 +334,14 @@ class AppAudioHandler extends BaseAudioHandler with QueueHandler, SeekHandler {
   Future<void> seek(Duration position) => _player.seek(position);
 
   @override
-  Future<void> skipToNext() => _player.seekToNext();
+  Future<void> skipToNext() {
+    final request = _nextSkipQueue.then((_) => _player.seekToNext());
+    _nextSkipQueue = request.catchError((Object error, StackTrace stackTrace) {
+      AppLog.log(
+          'playback', 'could not skip to next track: ${error.runtimeType}');
+    });
+    return _nextSkipQueue;
+  }
 
   @override
   Future<void> skipToPrevious() async {

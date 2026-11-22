@@ -51,7 +51,7 @@ class TrackTile extends ConsumerWidget {
           child: Row(
             children: [
               if (showArt) ...[
-                Artwork(artKey: track.artKey, size: 56),
+                Artwork(artKey: track.artKey, size: 56, trackId: track.id),
                 const SizedBox(width: 12),
               ],
               Expanded(

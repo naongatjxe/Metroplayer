@@ -17,13 +17,25 @@ const audioExtensions = {
 };
 
 class ScanRequest {
-  const ScanRequest(this.port, this.roots, this.known, this.artDir);
+  const ScanRequest(
+    this.port,
+    this.roots,
+    this.known,
+    this.artDir, {
+    this.excludedFolders = const [],
+  });
   final SendPort port;
   final List<String> roots;
+  final List<String> excludedFolders;
 
   /// path -> modified time (ms) of tracks already in the database.
   final Map<String, int> known;
   final String artDir;
+}
+
+bool isPathExcluded(String path, List<String> excludedFolders) {
+  return excludedFolders
+      .any((folder) => p.equals(path, folder) || p.isWithin(folder, path));
 }
 
 /// Runs in a background isolate. Pure Dart only (no plugins). Messages:
@@ -33,12 +45,13 @@ Future<void> scanWorker(ScanRequest r) async {
   final pending = <(File, int, int)>[];
 
   Future<void> walk(Directory d) async {
+    if (isPathExcluded(d.path, r.excludedFolders)) return;
     try {
       if (File(p.join(d.path, '.nomedia')).existsSync()) return;
       await for (final e in d.list(followLinks: false)) {
         if (p.basename(e.path).startsWith('.')) continue;
         if (e is Directory) {
-          await walk(e);
+          if (!isPathExcluded(e.path, r.excludedFolders)) await walk(e);
         } else if (e is File &&
             audioExtensions.contains(p.extension(e.path).toLowerCase())) {
           try {

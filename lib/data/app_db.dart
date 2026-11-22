@@ -80,29 +80,13 @@ class AppDb {
   List<Track> _tracks(List<Map<String, Object?>> rows) =>
       rows.map(Track.fromMap).toList();
 
-  static String _songOrder(String sort) => switch (sort) {
-        'title_desc' => 'title COLLATE NOCASE DESC',
-        'added' => 'date_added_ms DESC',
-        'artist' =>
-          'artist COLLATE NOCASE, album COLLATE NOCASE, disc_no, track_no',
-        _ => 'title COLLATE NOCASE ASC',
-      };
-
-  static String _albumOrder(String sort) => switch (sort) {
-        'title_desc' => 'title COLLATE NOCASE DESC',
-        'artist' => 'artist COLLATE NOCASE, title COLLATE NOCASE',
-        'year' => 'year DESC, title COLLATE NOCASE',
-        'added' => 'added DESC',
-        _ => 'title COLLATE NOCASE ASC',
-      };
-
   // ---- tracks ----
   Future<int> trackCount() async =>
       Sqflite.firstIntValue(await db.rawQuery('SELECT COUNT(*) FROM tracks')) ??
       0;
 
-  Future<List<Track>> songs(String sort) async =>
-      _tracks(await db.query('tracks', orderBy: _songOrder(sort)));
+  Future<List<Track>> songs() async =>
+      _tracks(await db.query('tracks', orderBy: 'title COLLATE NOCASE ASC'));
 
   Future<List<Track>> recentTracks({int limit = 100}) async => _tracks(await db
       .query('tracks', orderBy: 'date_added_ms DESC, id DESC', limit: limit));
@@ -233,9 +217,7 @@ class AppDb {
       "THEN 'various artists' ELSE MIN($_albumArtistExpr) END";
 
   Future<List<AlbumSummary>> albums(
-      {String sort = 'title',
-      String? artist,
-      String category = 'artist'}) async {
+      {String? artist, String category = 'artist'}) async {
     final where = artist == null
         ? ''
         : 'WHERE LOWER(${_artistExpr(category)}) = LOWER(?)';
@@ -247,7 +229,7 @@ class AppDb {
              MAX(date_added_ms) AS added
       FROM tracks $where
       GROUP BY $_albumGroup
-      ORDER BY ${_albumOrder(sort)}
+      ORDER BY title COLLATE NOCASE ASC
     ''', artist == null ? null : [artist]);
     return rows.map(AlbumSummary.fromMap).toList();
   }

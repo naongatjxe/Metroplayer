@@ -45,15 +45,13 @@ final trackCountProvider = FutureProvider<int>((ref) {
 
 final songsProvider = FutureProvider<List<Track>>((ref) {
   ref.watch(libraryVersionProvider);
-  final sort = ref.watch(settingsProvider.select((s) => s.songSort));
-  return ref.watch(dbProvider).songs(sort);
+  return ref.watch(dbProvider).songs();
 });
 
 final albumsProvider = FutureProvider<List<AlbumSummary>>((ref) {
   ref.watch(libraryVersionProvider);
-  final sort = ref.watch(settingsProvider.select((s) => s.albumSort));
   final category = ref.watch(settingsProvider.select((s) => s.artistCategory));
-  return ref.watch(dbProvider).albums(sort: sort, category: category);
+  return ref.watch(dbProvider).albums(category: category);
 });
 
 final artistsProvider = FutureProvider<List<ArtistSummary>>((ref) {

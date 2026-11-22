@@ -8,6 +8,7 @@ import '../../core/theme/app_icons.dart';
 import '../../core/theme/tokens.dart';
 import '../../core/widgets/metro_page.dart';
 import '../../core/widgets/pressable.dart';
+import '../shared/excluded_folders.dart';
 
 const welcomeShownPreferenceKey = 'welcomeShown';
 
@@ -45,6 +46,7 @@ class WelcomeView extends ConsumerWidget {
     final scan = ref.watch(scanProvider);
     final controller = ref.read(scanProvider.notifier);
     final trackCount = ref.watch(trackCountProvider).valueOrNull ?? 0;
+    final settings = ref.watch(settingsProvider);
 
     return LayoutBuilder(
       builder: (context, box) => SingleChildScrollView(
@@ -61,10 +63,53 @@ class WelcomeView extends ConsumerWidget {
                   style: Mt.header.copyWith(fontSize: 46)),
               const SizedBox(height: 14),
               const Text(
-                'Metroplayer plays the audio files on this device. '
+                'Metro Player plays the audio files on this device. '
                 'Point it at a folder and it will read the tags and cover art.',
                 style: Mt.subtitle,
               ),
+              const SizedBox(height: 20),
+              Text(
+                'accent color  ·  ${settings.accent}',
+                style: Mt.small.copyWith(color: context.accent),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 10,
+                children: [
+                  for (final accent in AccentColor.all)
+                    Pressable(
+                      label: '${accent.name} accent',
+                      tilt: false,
+                      onTap: () => ref
+                          .read(settingsProvider.notifier)
+                          .setAccent(accent.name),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: accent.fill,
+                          border: Border.all(
+                            color: settings.accent == accent.name
+                                ? Mt.text
+                                : Mt.outline,
+                            width: settings.accent == accent.name ? 2 : 1,
+                          ),
+                        ),
+                        child: settings.accent == accent.name
+                            ? const Center(
+                                child: MetroIcon(
+                                  AppIcons.check,
+                                  size: 20,
+                                  color: Mt.text,
+                                ),
+                              )
+                            : null,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              const ExcludedFoldersSection(),
               const SizedBox(height: 28),
               if (scan.scanning) ...[
                 LinearProgressIndicator(

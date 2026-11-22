@@ -1,6 +1,6 @@
-# Metroplayer
+# Metro Player
 
-Metroplayer is an offline music player for Android, built around a Zune-inspired
+Metro Player is an offline music player for Android, built around a Zune-inspired
 Metro interface: oversized typography, bold accent color, and a wall of live
 album-art tiles.
 
@@ -16,6 +16,7 @@ album-art tiles.
 
 - Plays audio files stored on the device and keeps the library database local.
 - Browse songs, albums, artists, playlists, recently played tracks, and history.
+- Alphabetical letter groups and jump grid for songs, albums, artists, and recent additions.
 - Shuffle builds a visible upcoming queue; played tracks are hidden from it.
 - Quickplay live tiles and mixes built from listening and library details.
 - Lyrics from local files or embedded tags, with an online LRCLIB lookup option.

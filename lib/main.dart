@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
@@ -16,11 +17,19 @@ import 'audio/audio_handler.dart';
 import 'data/app_db.dart';
 import 'data/app_log.dart';
 
-Future<void> main() async {
+void main() {
+  runZonedGuarded<Future<void>>(_initializeApp, (error, stackTrace) {
+    AppLog.logError('zone', error, stackTrace);
+  });
+}
+
+Future<void> _initializeApp() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   final db = await AppDb.open();
   AppLog.attach(db);
+  AppLog.installErrorHandlers();
   final prefs = await SharedPreferences.getInstance();
 
   final support = await getApplicationSupportDirectory();
@@ -33,10 +42,10 @@ Future<void> main() async {
       androidNotificationChannelId: 'com.commandline.metroplayer.playback',
       androidNotificationChannelName: 'Playback',
       androidNotificationChannelDescription:
-          'Playback controls for Metroplayer',
+          'Playback controls for Metro Player',
       androidNotificationOngoing: true,
       androidStopForegroundOnPause: true,
-      androidNotificationIcon: 'drawable/ic_stat_music',
+      androidNotificationIcon: 'mipmap/ic_launcher',
     ),
   );
 

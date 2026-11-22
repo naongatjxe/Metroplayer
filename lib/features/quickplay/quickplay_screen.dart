@@ -299,7 +299,7 @@ class _TileFace extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         if (artKey != null && artKey!.isNotEmpty)
-          Artwork(artKey: artKey)
+          Artwork(artKey: artKey, showEqualizer: false)
         else
           ColoredBox(color: tint),
         TileShade(color: tint, opacity: 0.28),
@@ -323,12 +323,13 @@ class _NowPlayingFace extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final art = item?.extras?['art'] as String?;
+    final trackId = (item?.extras?['tid'] as num?)?.toInt();
     final summary = metaSummary(track);
     return Stack(
       fit: StackFit.expand,
       children: [
         if (art != null && art.isNotEmpty)
-          Artwork(artKey: art)
+          Artwork(artKey: art, trackId: trackId, showEqualizer: true)
         else
           ColoredBox(color: context.accentFill),
         TileShade(color: context.accentFill, opacity: 0.45),

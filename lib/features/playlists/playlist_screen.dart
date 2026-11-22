@@ -183,7 +183,11 @@ class _PlaylistViewState extends ConsumerState<_PlaylistView> {
                               horizontal: 16, vertical: 8),
                           child: Row(
                             children: [
-                              Artwork(artKey: entry.track.artKey, size: 56),
+                              Artwork(
+                                artKey: entry.track.artKey,
+                                size: 56,
+                                trackId: entry.track.id,
+                              ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(

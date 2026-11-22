@@ -41,6 +41,7 @@ abstract final class LrcParser {
       }
     }
     final out = <LrcLine>[];
+    final seen = <(int, String)>{};
     for (final raw in lines) {
       var rest = raw.trimLeft().replaceFirst(_version, '');
       final times = <Duration>[];
@@ -65,7 +66,10 @@ abstract final class LrcParser {
       if (times.isEmpty) continue;
       final text = plainText(rest);
       for (final t in times) {
-        out.add(LrcLine(t, text));
+        final normalizedText = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+        if (seen.add((t.inMilliseconds, normalizedText))) {
+          out.add(LrcLine(t, text));
+        }
       }
     }
     out.sort((a, b) => a.time.compareTo(b.time));

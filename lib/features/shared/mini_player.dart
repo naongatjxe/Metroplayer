@@ -17,6 +17,7 @@ class MiniPlayer extends ConsumerWidget {
     final item = ref.watch(mediaItemProvider).valueOrNull;
     if (item == null) return const SizedBox.shrink();
     final artKey = item.extras?['art'] as String?;
+    final trackId = (item.extras?['tid'] as num?)?.toInt();
     final playing = ref.watch(playingProvider).valueOrNull ?? false;
     final scale = MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.5);
     final barHeight = 62 + (scale - 1) * 34;
@@ -45,7 +46,11 @@ class MiniPlayer extends ConsumerWidget {
                             Padding(
                               padding:
                                   const EdgeInsets.symmetric(horizontal: 12),
-                              child: Artwork(artKey: artKey, size: 46),
+                              child: Artwork(
+                                artKey: artKey,
+                                size: 46,
+                                trackId: trackId,
+                              ),
                             ),
                             Expanded(
                               child: Column(
