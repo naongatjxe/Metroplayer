@@ -23,7 +23,7 @@ album-art tiles.
 ## Install
 
 Download the APK matching your Android CPU architecture from
-[GitHub Releases](https://github.com/naongatjxe/metroplayer/releases). Use the
+[GitHub Releases](https://github.com/naongatjxe/Metroplayer/releases). Use the
 universal APK if you are unsure which one to choose.
 
 ## Build from source
