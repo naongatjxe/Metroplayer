@@ -27,9 +27,9 @@ album-art tiles.
 |:---:|:---:|:---:|:---:|
 | <img src="docs/screenshots/welcome.jpeg" alt="Welcome and music folder setup" width="220"> | <img src="docs/screenshots/music-menu.jpeg" alt="Music navigation menu" width="220"> | <img src="docs/screenshots/quick-play.jpeg" alt="Quick play library shortcuts" width="220"> | <img src="docs/screenshots/songs.jpeg" alt="Song library with alphabetical jump index" width="220"> |
 
-| Sort by Letter | Now Playing | About | |
+| Sort by Letter | Now Playing | Lyrics | About |
 |:---:|:---:|:---:|:---:|
-| <img src="docs/screenshots/sort-by.jpeg" alt="Alphabetical song sorting" width="220"> | <img src="docs/screenshots/now-playing.jpeg" alt="Now playing screen" width="220"> | <img src="docs/screenshots/about.jpeg" alt="About Metro Player" width="220"> | |
+| <img src="docs/screenshots/sort-by.jpeg" alt="Alphabetical song sorting" width="220"> | <img src="docs/screenshots/now-playing.jpeg" alt="Now playing screen" width="220"> | <img src="docs/screenshots/lyrics.jpeg" alt="Scrolling lyrics screen" width="220"> | <img src="docs/screenshots/about.jpeg" alt="About Metro Player" width="220"> |
 
 ## Install
 
