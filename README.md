@@ -23,21 +23,13 @@ album-art tiles.
 
 ## Screenshots
 
-<p align="center">
-  <img src="docs/screenshots/welcome.jpeg" alt="Welcome and music folder setup" width="280">
-  <img src="docs/screenshots/music-menu.jpeg" alt="Music navigation menu" width="280">
-  <img src="docs/screenshots/quick-play.jpeg" alt="Quick play library shortcuts" width="280">
-</p>
+| Welcome | Music Menu | Quick Play | Songs |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/welcome.jpeg" alt="Welcome and music folder setup" width="220"> | <img src="docs/screenshots/music-menu.jpeg" alt="Music navigation menu" width="220"> | <img src="docs/screenshots/quick-play.jpeg" alt="Quick play library shortcuts" width="220"> | <img src="docs/screenshots/songs.jpeg" alt="Song library with alphabetical jump index" width="220"> |
 
-<p align="center">
-  <img src="docs/screenshots/songs.jpeg" alt="Song library with alphabetical jump index" width="280">
-  <img src="docs/screenshots/sort-by.jpeg" alt="Alphabetical song sorting" width="280">
-  <img src="docs/screenshots/now-playing.jpeg" alt="Now playing screen" width="280">
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/about.jpeg" alt="About Metro Player" width="280">
-</p>
+| Sort by Letter | Now Playing | About | |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/sort-by.jpeg" alt="Alphabetical song sorting" width="220"> | <img src="docs/screenshots/now-playing.jpeg" alt="Now playing screen" width="220"> | <img src="docs/screenshots/about.jpeg" alt="About Metro Player" width="220"> | |
 
 ## Install
 
